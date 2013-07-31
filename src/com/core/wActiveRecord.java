@@ -1,4 +1,4 @@
-package laurus.libraries;
+package com.core;
 
 import java.io.Serializable;
 import java.sql.Connection;
@@ -13,37 +13,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import javax.persistence.Table;
-import static laurus.utils.Debug.*;
+import static com.core.output.Debug.log;
+//import javax.persistence.Table;
 
 /**
  *
  * @author wr
  */
-public class wActiveRecord {
+public class wActiveRecord extends wQueryBuilder {
 
-    private static Connection _db_connection = null;
-    private Statement _statement = null;
-    private ResultSet _resultset = null;
-    private Map<String, String> _join = new HashMap<String, String>();
-    private Map<String, String> _where = new HashMap<String, String>();
-    private Map<String, String[]> _where_in = new HashMap<String, String[]>();
-    private Map<String, String> _like = new HashMap<String, String>();
-    private Map<String, String> _or_like = new HashMap<String, String>();
-    private String // Active record
-            _db_prefix = "",
-            _select = "*",
-            _group_by = "",
-            _order_by = "",
-            _limit = "",
-            // Database Configuration
-            _host = "localhost",
-            _port = "3306",
-            _database = null,
-            _user = "root",
-            _pass = "";
-    private String _table;
-
+    
     /**
      * Initialize database credentials
      *
@@ -53,7 +32,7 @@ public class wActiveRecord {
      * @param user
      * @param pass
      */
-    public ActiveRecord(String host, String port, String database, String user, String pass) {
+    public wActiveRecord(String host, String port, String database, String user, String pass) {
         this._host = host;
         this._port = port;
         this._database = database;
@@ -67,51 +46,51 @@ public class wActiveRecord {
 
     //------------------- Active Record Query -------------------
     //- SELECT
-    public ActiveRecord select(String str) {
+    public wActiveRecord select(String str) {
         this._select = str;
         return this;
     }
 
     //- FROM
-    public ActiveRecord from(Class<Serializable> table) {
+    public wActiveRecord from(Class<Serializable> table) {
         this._table = table.getAnnotation(Table.class).name();
         return this;
     }
 
-    public ActiveRecord from(String table) {
+    public wActiveRecord from(String table) {
         this._table = table;
         return this;
     }
 
     //- Join
-    public ActiveRecord join(String table, String clausure, String joinType) {
+    public wActiveRecord join(String table, String clausure, String joinType) {
         this._join.put(table + "|" + joinType, clausure);
         return this;
     }
 
-    public ActiveRecord join(String table, String clausure) {
+    public wActiveRecord join(String table, String clausure) {
         return this.join(table, clausure, "inner");
     }
 
     //- WHERE
-    public ActiveRecord where(String column, String value, boolean scape) {
+    public wActiveRecord where(String column, String value, boolean scape) {
         this._where.put(column, (scape ? "'" + value + "'" : value));
         return this;
     }
 
-    public ActiveRecord where(String column, String value) {
+    public wActiveRecord where(String column, String value) {
         return this.where(column, value, true);
     }
 
-    public ActiveRecord where(String column, int value) {
+    public wActiveRecord where(String column, int value) {
         return this.where(column, String.valueOf(value), true);
     }
 
-    public ActiveRecord where(String column, int value, boolean scape) {
+    public wActiveRecord where(String column, int value, boolean scape) {
         return this.where(column, String.valueOf(value), scape);
     }
 
-    public ActiveRecord where_in(String column, String... clause) {
+    public wActiveRecord where_in(String column, String... clause) {
         this._where_in.put(column, clause);
         return this;
     }
@@ -125,7 +104,7 @@ public class wActiveRecord {
      * @param math | L, R, [default B]: %Left, Right% OR %Both%
      * @return
      */
-    public ActiveRecord like(String column, String value, String math) {
+    public wActiveRecord like(String column, String value, String math) {
 
         switch (math.toUpperCase()) {
             case "L":
@@ -143,7 +122,7 @@ public class wActiveRecord {
         return this;
     }
 
-    public ActiveRecord like(String column, String value) {
+    public wActiveRecord like(String column, String value) {
         return this.like(column, value, "B");
     }
 
@@ -156,7 +135,7 @@ public class wActiveRecord {
      * @param math | L, R, [default B]: %Left, Right% OR %Both%
      * @return
      */
-    public ActiveRecord or_like(String column, String value, String math) {
+    public wActiveRecord or_like(String column, String value, String math) {
 
         switch (math.toUpperCase()) {
             case "L":
@@ -174,38 +153,38 @@ public class wActiveRecord {
         return this;
     }
 
-    public ActiveRecord or_like(String column, String value) {
+    public wActiveRecord or_like(String column, String value) {
         return this.or_like(column, value, "B");
     }
 
     //- LIMIT
-    public ActiveRecord limit(int limit) {
+    public wActiveRecord limit(int limit) {
         return this.limit(limit, 0);
     }
 
-    public ActiveRecord limit(int limit, int offset) {
+    public wActiveRecord limit(int limit, int offset) {
         this._limit = String.valueOf(offset) + "," + String.valueOf(limit);
         return this;
     }
 
     //- ORDER BY
-    public ActiveRecord orderBy(String syntax) {
+    public wActiveRecord orderBy(String syntax) {
         this._order_by = syntax;
         return this;
     }
 
-    public ActiveRecord orderBy(String column, String value) {
+    public wActiveRecord orderBy(String column, String value) {
         this._order_by = column + " " + value;
         return this;
     }
 
     //- GROUP BY
-    public ActiveRecord groupBy(String syntax) {
+    public wActiveRecord groupBy(String syntax) {
         this._group_by = syntax;
         return this;
     }
 
-    public ActiveRecord groupBy(String column, String value) {
+    public wActiveRecord groupBy(String column, String value) {
         this._group_by = column + " " + value;
         return this;
     }
@@ -218,25 +197,18 @@ public class wActiveRecord {
     public void setDbPrefix(String str) {
         this._db_prefix = str;
     }
-
-    /**
-     * Get list of records List<HashMap<String,String>>, if not record found
-     * null is returned
-     *
-     * @return List<HashMap<String,String>>
-     */
-//    public List get() {
-//        return get(this._table);
-//    }
-    /**
-     * Get list of records List<HashMap<String,String>>, if not record found
-     * null is returned
-     *
-     * @return List<HashMap<String,String>>
-     */
-    public List get(Class<? extends Serializable> table) {
+    
+    /*public List get(Class<? extends Serializable> table) {
         return get(table.getAnnotation(Table.class).name());
-    }
+    }*/
+    
+    /**
+     * Get list of records List<HashMap<String,String>>, if not record found
+     * null is returned
+     *
+     * @return List<HashMap<String,String>>
+     */
+    
 
     public List get() {
         return get(this._table);
@@ -405,7 +377,7 @@ public class wActiveRecord {
         return SQL;
     }
 
-    public ActiveRecord clearQuery() {
+    public wActiveRecord clearQuery() {
 
         _where_in.clear();
         _join.clear();
